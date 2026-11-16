@@ -138,4 +138,21 @@ Tiempos medidos el 12/11/2026 en `dev`: el `destroy` tardó **1 min 33 s**. El r
 
 ## 9. Quién hace qué
 
-**(a completar)** el reparto para la defensa.
+Defensa del 25 de noviembre, 15 minutos. Antes se despliega todo el día 24 (ver sección 3).
+
+| Minutos | Quién | Qué muestra |
+|---|---|---|
+| 0 a 4 | Macarena | Qué es CloudCV, la arquitectura, las decisiones, la seguridad de la app y el CV funcionando con su contador |
+| ~4 | Macarena | Rompe la Function a propósito (curl con errores desde otra terminal) |
+| 4 a 9 | Juliana | Pipeline de un PR a Azure (checks, plan, aprobación, deploy), OIDC sin contraseñas, permisos de la identidad y Checkov |
+| ~8:30 | Juliana | Lanza Actions › `deploy` › **Run workflow** sobre `main` y lo aprueba |
+| 9 a 11 | Macarena | Dashboard con el pico de errores y la alerta disparada en el portal (Monitor, Alertas, Historial) |
+| 11 a 12 | Juliana | Muestra que el deploy restauró la Function (el plan vuelve `TABLE_NAME` a `visitas`) y la captura de la alerta "Resuelta" (tarda 20 a 30 minutos en cerrarse, no se espera en vivo). Si falla la subida, **Re-run failed jobs**; plan B: la captura de la corrida en verde |
+| 12 a 14 | Macarena | FinOps (costo real, proyección y medidas de ahorro) y la evidencia del destroy |
+| 14 a 15 | Las dos | Qué aprendimos y preguntas |
+
+El mail de la alerta le llega a Juliana (el de Macarena no se pudo verificar), por eso la alerta se muestra en el portal.
+
+Preguntas que Juliana debe poder responder: por qué OIDC, qué pasa si roban la identidad del pipeline, por qué hay 25 skips de Checkov, quién aprueba el deploy, y por qué el run `deploy #1` de la rama `feature/deploy` salió en rojo (YAML mal indentado, corregido antes de unir a `main`).
+
+Preguntas que Macarena debe poder responder: por qué no Static Web Apps, por qué Table Storage y no Cosmos DB, y cuánto costaría con un millón de visitas por mes (USD 16,75 según la calculadora de Azure).
