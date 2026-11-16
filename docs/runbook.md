@@ -88,11 +88,7 @@ for i in $(seq 1 100); do curl -s -o /dev/null -w "%{http_code} " -X POST "<api_
 ```
 
 4. Mostrar la alerta en el portal (Monitor, Alertas, Historial). El mail llega a Juliana, pero no se cuenta con él en la demo (ver el final de esta sección).
-5. **Restaurar enseguida** el valor anotado:
-
-```bash
-az functionapp config appsettings set --name "$FUNCION" --resource-group rg-cloudcv-dev --settings TABLE_NAME=<valor anotado>
-```
+5. **Restaurar por el pipeline** (así se hace en la defensa): en GitHub, Actions, `deploy`, **Run workflow** sobre `main` y aprobar `dev`. El `apply` detecta el cambio hecho a mano y vuelve a dejar `TABLE_NAME` en el valor correcto. Medido el 16/11/2026: unos **2 minutos** de ejecución (apply y subida de la Function), más la aprobación. Si falla el paso de subida, **Re-run failed jobs** suma otros 2 minutos. Plan B: tener a mano la captura de la corrida en verde. En la defensa se lanza en el minuto 8:30.
 
 6. Comprobar que la API vuelve a responder 200 y que la alerta se cierra sola (aviso de resuelta).
 
@@ -135,7 +131,7 @@ Qué queda a propósito, porque lo necesita el próximo despliegue y cuesta cent
 | `Error acquiring the state lock` | Otro `apply` o `plan` en curso | Esperar a que termine. No forzar el desbloqueo sin estar segura |
 | El `plan` falla al validar `alert_emails` | Falta el secret `ALERT_EMAILS` o no es una lista JSON | Revisar el secret |
 | Un `apply` falla con `403` en una asignación de rol | El rol no está en la lista del bootstrap | Revisar la condición del rol RBAC Administrator |
-| Falla el paso "subir el código de la Function" (`Failed to deploy web package`) justo después de crear todo | Algo pasajero con la Function recién creada (no confirmamos la causa exacta) | Usar **Re-run failed jobs** en la ejecución y aprobar `dev` de nuevo. En el redeploy del 12/11 salió bien en el segundo intento |
+| Falla el paso "subir el código de la Function" (`Failed to deploy web package`) justo después de crear todo | Fallo pasajero de Azure: el servidor de build (Oryx) no pudo bajar las herramientas de Python desde oryx-cdn.microsoft.io (visto en el log del 16/11; el 12/11 falló el mismo paso) | Usar **Re-run failed jobs** en la ejecución y aprobar `dev` de nuevo. En el redeploy del 12/11 salió bien en el segundo intento |
 | El mail de la alerta no llega | El receptor figura "Pendiente" en el grupo de acciones: no confirmó el código | En Monitor, Grupos de acciones, `ag-cloudcv-equipo`, **Reenviar** e ingresar el código. Revisar también spam y la cuarentena de la UCU |
 
 Tiempos medidos el 12/11/2026 en `dev`: el `destroy` tardó **1 min 33 s**. El redeploy necesitó dos intentos: el primero creó todo (4 min 3 s) y falló al subir la Function; el segundo, que solo reintenta el job, terminó bien en 1 min 30 s. Después de destruir, el contador arranca de cero y las direcciones del sitio y de la API son nuevas.
