@@ -181,7 +181,7 @@ gh api repos/DUEÑO/REPO --jq '.owner.id, .id'
 
 ### Paso 2: ajustar el bootstrap
 
-En `infra/bootstrap/variables.tf`, cambiar los valores por defecto de:
+En `infra/bootstrap/variables.tf` (y en `oidc_subject.tf` para los dos IDs), cambiar los valores por defecto de:
 
 | Variable | Qué poner |
 | --- | --- |
@@ -239,7 +239,7 @@ Seguir la sección 2. Cuando se crea el grupo de acciones, Azure manda a cada ma
 No hace falta empezar de cero. El ID del repositorio no cambia al transferirlo, pero sí el dueño y el nombre:
 
 1. Paso 1, para el nuevo dueño.
-2. En `infra/bootstrap/variables.tf`, cambiar solo `github_repo` y `github_owner_id`.
+2. En `infra/bootstrap/variables.tf`, cambiar `github_repo` (en `variables.tf`) y `github_owner_id` (en `oidc_subject.tf`).
 3. Quien tenga el state del bootstrap corre `tofu apply` en `infra/bootstrap`: solo actualiza las tres credenciales federadas.
 4. Revisar que en el repo sigan las variables, el secret `ALERT_EMAILS` y el environment `dev` con sus revisoras.
 5. Probar con un PR chico: si el plan corre, OIDC funciona.
