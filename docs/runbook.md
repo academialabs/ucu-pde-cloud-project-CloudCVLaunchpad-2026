@@ -156,3 +156,90 @@ El mail de la alerta le llega a Juliana (el de Macarena no se pudo verificar), p
 Preguntas que Juliana debe poder responder: por qué OIDC, qué pasa si roban la identidad del pipeline, por qué hay 25 skips de Checkov, quién aprueba el deploy, y por qué el run `deploy #1` de la rama `feature/deploy` salió en rojo (YAML mal indentado, corregido antes de unir a `main`).
 
 Preguntas que Macarena debe poder responder: por qué no Static Web Apps, por qué Table Storage y no Cosmos DB, y cuánto costaría con un millón de visitas por mes (USD 16,75 según la calculadora de Azure).
+
+
+## 10. Desplegar desde cero (otra suscripción u otro repositorio)
+
+Esta sección es para quien quiera levantar CloudCV en su propia cuenta, o para nosotras si cambia el repositorio. Las secciones 1 a 9 suponen que el bootstrap ya está hecho.
+
+### Requisitos
+
+- Azure CLI y OpenTofu 1.10 o más nuevo (nosotras usamos la 1.13.2).
+- Permiso de **Owner** en la suscripción de Azure: el bootstrap asigna roles.
+- Ser administradora del repositorio de GitHub (para crear variables, secrets y el environment).
+- Python 3.12, solo si se quieren correr los tests de la Function en la compu.
+
+### Paso 1: los datos del repositorio
+
+GitHub firma el token de OIDC con el ID numérico del dueño y del repositorio, así que hay que anotarlos:
+
+```bash
+gh api repos/DUEÑO/REPO --jq '.owner.id, .id'
+```
+
+`DUEÑO/REPO` es el nombre del repositorio, por ejemplo `academialabs/ucu-pde-cloud-project-CloudCVLaunchpad-2026`. El primer número es el ID del dueño y el segundo, el del repositorio.
+
+### Paso 2: ajustar el bootstrap
+
+En `infra/bootstrap/variables.tf` (y en `oidc_subject.tf` para los dos IDs), cambiar los valores por defecto de:
+
+| Variable | Qué poner |
+| --- | --- |
+| `subscription_id` | El ID de la suscripción: `az account show --query id -o tsv` |
+| `github_repo` | `DUEÑO/REPO` |
+| `github_owner_id` y `github_repo_id` | Los dos números del paso 1 |
+| `state_users` | El object ID de cada integrante: `az ad signed-in-user show --query id -o tsv` (cada una corre el comando con su sesión) |
+| `owner` | Quién es la responsable, para la etiqueta `owner` |
+
+Después, copiar `infra/bootstrap/budget.auto.tfvars.example` como `budget.auto.tfvars` y poner los mails reales (ese archivo no se sube: está en el `.gitignore`).
+
+### Paso 3: correr el bootstrap
+
+```bash
+az login --use-device-code
+cd infra/bootstrap
+tofu init
+tofu apply
+```
+
+Crea el state remoto, la identidad del pipeline con sus tres credenciales federadas (PR, `main` y environment `dev`), sus permisos, el resource group `rg-cloudcv-dev` y el presupuesto.
+
+El state del bootstrap queda **en la compu de quien lo corrió** (`terraform.tfstate`, no se sube al repo). Hay que guardarlo: sin él, cualquier cambio al bootstrap se vuelve mucho más difícil.
+
+### Paso 4: conectar GitHub con Azure
+
+Desde la carpeta `infra/bootstrap`:
+
+```bash
+gh variable set AZURE_CLIENT_ID --body "$(tofu output -raw github_client_id)"
+gh variable set AZURE_TENANT_ID --body "$(tofu output -raw tenant_id)"
+gh variable set AZURE_SUBSCRIPTION_ID --body "$(tofu output -raw subscription_id)"
+gh secret set ALERT_EMAILS --body '["persona1@ejemplo.com","persona2@ejemplo.com"]'
+```
+
+En el último comando van los mails reales, como lista JSON.
+
+### Paso 5: el backend de `dev`
+
+El nombre de la cuenta del state lleva un sufijo al azar. Ver cuál quedó con `tofu output -raw storage_account_name` y ponerlo en `storage_account_name` de `infra/envs/dev/backend.tf`.
+
+### Paso 6: el environment y la seguridad del repo
+
+En GitHub, **Settings**:
+
+1. **Environments › New environment** con el nombre `dev`: marcar **Required reviewers** (las integrantes) y, en **Deployment branches**, permitir solo `main`.
+2. **Actions › General**: en "Fork pull request workflows", elegir **Require approval for all external contributors**.
+
+### Paso 7: desplegar
+
+Seguir la sección 2. Cuando se crea el grupo de acciones, Azure manda a cada mail un código de verificación que vence a los 30 minutos: hay que ingresarlo en el portal (ver la sección 5) o la alerta no llega a ese mail.
+
+### Si solo cambia el repositorio (por ejemplo, al pasarlo a otra organización)
+
+No hace falta empezar de cero. El ID del repositorio no cambia al transferirlo, pero sí el dueño y el nombre:
+
+1. Paso 1, para el nuevo dueño.
+2. En `infra/bootstrap/variables.tf`, cambiar `github_repo` (en `variables.tf`) y `github_owner_id` (en `oidc_subject.tf`).
+3. Quien tenga el state del bootstrap corre `tofu apply` en `infra/bootstrap`: solo actualiza las tres credenciales federadas.
+4. Revisar que en el repo sigan las variables, el secret `ALERT_EMAILS` y el environment `dev` con sus revisoras.
+5. Probar con un PR chico: si el plan corre, OIDC funciona.
