@@ -7,7 +7,7 @@ En este documento contamos qué herramientas de IA usamos, para qué, qué regla
 | Herramienta | Quién | Para qué |
 | --- | --- | --- |
 | Claude (claude.ai, con acceso al repo público y a las capturas que le pasábamos) | Macarena | Planificar las fases, guía paso a paso, borradores de código y de documentación, revisión de PR y diagnóstico de errores |
-| Claude | Juliana | *(Juliana completa: para qué lo usó en el bootstrap, los workflows, la matriz IAM y el runbook)* |
+| Claude | Juliana | Guía paso a paso para el bootstrap (identidad del pipeline, OIDC, permisos RBAC y presupuesto), los workflows (ci, plan, deploy y destroy), la matriz IAM y el runbook. También para revisar PR, chequear las cifras de FinOps contra Cost Management y la calculadora, y armar el borrador de la parte del pipeline del blog y del speech de la defensa. Claude no tuvo acceso a mi terminal ni a Azure: yo ejecutaba cada comando y le pegaba la salida o una captura. |
 | Checkov, tflint, `tofu validate` y pytest | Las dos | No son IA, pero son la red de seguridad: todo lo que propuso la IA pasó por estos chequeos en cada PR |
 
 ## Para qué la usamos
@@ -44,6 +44,10 @@ Algunos de los pedidos que hicimos, tal como los escribimos:
 | Que los dos mails estaban verificados porque decían "Suscrito" | "Suscrito" y "Verificado/Pendiente" son estados distintos; el de Macarena seguía pendiente | Juliana, en el portal después del redeploy |
 | Checkov tenía 19 excepciones | Son 25: el CI revisa toda la carpeta `infra`, no solo los módulos | Juliana, contando en el código |
 | El costo de la Function con un millón de visitas, unos USD 10,70 | La calculadora de Azure da USD 15,10 en Canada Central (usamos el precio de otra región) | Macarena, al cargarlo en la calculadora |
+| La alerta se cierra sola en 5 a 10 minutos | En el ensayo tardó entre 21 y 30 minutos en pasar a "Resuelta" | Juliana, midiendo los tiempos del ensayo del 10/11 |
+| La verificación del mail se repite en cada deploy desde cero | El código de verificación (OTP) queda guardado para todo el tenant y no se repite | Macarena, con la documentación de Microsoft |
+| El state del bootstrap está en la carpeta del proyecto | Estaba en otro clon, en la carpeta personal. Sin ese state, un `apply` habría querido crear todo de nuevo | Juliana, al ver que faltaba `terraform.tfstate` antes de aplicar |
+| La causa del fallo de subida de la Function estaba confirmada el 12/11 y el 16/11 | Solo se vio el mensaje del log del 16/11 (Oryx no pudo bajar las herramientas de Python) | Claude lo detectó al revisar el diff, y se corrigió antes de hacer el commit |
 
 ## Qué aprendimos usando IA
 
