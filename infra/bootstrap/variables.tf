@@ -36,7 +36,7 @@ variable "owner" {
 variable "github_repo" {
   description = "Repositorio de GitHub (dueño/nombre) autorizado a usar la identidad."
   type        = string
-  default     = "macarenapineiro/cloudcv-launchpad"
+  default     = "academialabs/ucu-pde-cloud-project-CloudCVLaunchpad-2026"
 }
 
 variable "github_environment" {

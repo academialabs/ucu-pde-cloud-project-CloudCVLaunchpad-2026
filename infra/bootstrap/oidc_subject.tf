@@ -5,7 +5,7 @@
 variable "github_owner_id" {
   description = "ID numérico del dueño del repositorio en GitHub (aparece en el subject del token OIDC)."
   type        = string
-  default     = "167207590"
+  default     = "163343349"
 }
 
 variable "github_repo_id" {
